@@ -172,10 +172,23 @@ header{
   flex: 0 0 auto;
   margin-left: 10px;
   white-space: nowrap;
-  transition: opacity .15s var(--ease), transform .15s var(--ease);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: opacity .15s var(--ease), transform .15s var(--ease), background .15s var(--ease);
 }
+.ac-badge:hover{ background: rgba(127,174,146,.24); }
+.ac-badge:active{ transform: scale(.97); }
 .ac-badge.hidden{ opacity:0; pointer-events:none; transform: translateX(4px); position:absolute; }
-.ac-badge .ac-dot{ width:6px; height:6px; border-radius:50%; background: var(--sage); flex:0 0 auto; }
+.ac-badge .ac-dot{ width:6px; height:6px; border-radius:50%; background: var(--sage); flex:0 0 auto; opacity:.45; }
+.ac-badge.loaded .ac-dot{ opacity:1; }
+.ac-badge.loading{ cursor: wait; opacity:.75; }
+.ac-badge.loading .ac-dot{ animation: ac-pulse 1s ease-in-out infinite; }
+.ac-badge.error{ border-color: rgba(241,76,76,.4); background: var(--danger-soft); color: var(--danger); }
+.ac-badge.error .ac-dot{ background: var(--danger); opacity:1; }
+.ac-badge-status{ color: var(--text-dim); font-weight: 500; }
+.ac-badge.loaded .ac-badge-status{ color: inherit; }
+.ac-badge.error .ac-badge-status{ color: inherit; }
+@keyframes ac-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
 
 /* ---------- tab bar ---------- */
 .tabbar{
@@ -557,10 +570,11 @@ li.CodeMirror-hint-active{
       </div>
     </div>
 
-    <div class="ac-badge hidden" id="ac-badge" title="Bu dosya türü için otomatik tamamlama etkin">
+    <button type="button" class="ac-badge hidden" id="ac-badge" title="Otomatik tamamlama kelimelerini repodan çek">
       <span class="ac-dot"></span>
       <span id="ac-badge-label">Unity</span>
-    </div>
+      <span id="ac-badge-status" class="ac-badge-status">Etkinleştir</span>
+    </button>
   </header>
 
   <div class="tabbar empty" id="tabbar"></div>
@@ -712,84 +726,10 @@ li.CodeMirror-hint-active{
   }
 
   /* ---------- otomatik tamamlama sözlükleri ---------- */
-  var CSHARP_WORDS = [
-    'public','private','protected','internal','static','void','class','struct','interface',
-    'enum','namespace','using','new','return','if','else','for','foreach','while','do','switch',
-    'case','break','continue','try','catch','finally','throw','null','true','false','this','base',
-    'virtual','override','abstract','sealed','readonly','const','string','int','float','double',
-    'bool','var','object','List','Dictionary','IEnumerable'
-  ];
-  var UNITY_WORDS = [
-    // Core Classes & Lifecycles
-    'MonoBehaviour', 'GameObject', 'Transform', 'Component', 'UnityEngine', 'Object',
-    'Start', 'Update', 'FixedUpdate', 'LateUpdate', 'Awake', 'OnEnable', 'OnDisable',
-    'OnDestroy', 'Reset', 'OnValidate', 'Coroutine', 'StartCoroutine', 'StopCoroutine',
-    'StopAllCoroutines', 'IEnumerator', 'WaitForSeconds', 'WaitForFixedUpdate',
-    'WaitForEndOfFrame', 'WaitUntil', 'WaitWhile', 'CustomYieldInstruction',
-
-    // Physics & Collisions (3D & 2D)
-    'Rigidbody', 'Rigidbody2D', 'Collider', 'Collider2D', 'BoxCollider', 'BoxCollider2D',
-    'SphereCollider', 'CapsuleCollider', 'CapsuleCollider2D', 'MeshCollider', 'WheelCollider',
-    'Physics', 'Physics2D', 'Ray', 'Ray2D', 'RaycastHit', 'RaycastHit2D', 'LayerMask',
-    'OnCollisionEnter', 'OnCollisionStay', 'OnCollisionExit', 'OnCollisionEnter2D',
-    'OnCollisionStay2D', 'OnCollisionExit2D', 'OnTriggerEnter', 'OnTriggerStay',
-    'OnTriggerExit', 'OnTriggerEnter2D', 'OnTriggerStay2D', 'OnTriggerExit2D',
-    'AddForce', 'AddTorque', 'Velocity', 'AngularVelocity', 'ConstantForce',
-
-    // Math & Structures
-    'Vector3', 'Vector2', 'Vector4', 'Quaternion', 'Matrix4x4', 'Mathf', 'Color', 'Color32',
-    'Rect', 'Bounds', 'BoundsInt', 'Vector3Int', 'Vector2Int', 'Lerp', 'LerpUnclamped',
-    'Slerp', 'MoveTowards', 'SmoothDamp', 'Clamp', 'Clamp01', 'Abs', 'Min', 'Max', 'Sign',
-    'PingPong', 'Repeat', 'InverseLerp', 'Ceil', 'Floor', 'Round', 'Sqrt', 'Pow', 'PI',
-    'Rad2Deg', 'Deg2Rad', 'Epsilon', 'Infinity', 'NegativeInfinity',
-
-    // Input System (Legacy & Common)
-    'Input', 'GetAxis', 'GetAxisRaw', 'GetButton', 'GetButtonDown', 'GetButtonUp',
-    'GetKey', 'GetKeyDown', 'GetKeyUp', 'GetMouseButton', 'GetMouseButtonDown',
-    'GetMouseButtonUp', 'mousePosition', 'anyKey', 'anyKeyDown', 'touchCount', 'touches',
-    'Touch', 'TouchPhase', 'KeyCode',
-
-    // Utilities & Management
-    'Debug', 'Log', 'LogWarning', 'LogError', 'LogException', 'ClearDeveloperConsole',
-    'Application', 'quit', 'isPlaying', 'isEditor', 'targetFrameRate', 'persistentDataPath',
-    'streamingAssetsPath', 'openURL', 'SystemLanguage', 'Platform',
-    'Time', 'deltaTime', 'fixedDeltaTime', 'timeScale', 'time', 'realtimeSinceStartup',
-    'Random', 'Range', 'value', 'insideUnitSphere', 'insideUnitCircle', 'onUnitSphere',
-    'rotation', 'InitState', 'State',
-
-    // Scene & Asset Management
-    'SceneManager', 'LoadScene', 'LoadSceneAsync', 'UnloadSceneAsync', 'GetActiveScene',
-    'CreateScene', 'Scene', 'name', 'buildIndex', 'isLoaded', 'LoadSceneMode',
-    'Resources', 'Load', 'LoadAll', 'UnloadUnusedAssets', 'AssetBundle',
-
-    // Audio & Visuals
-    'AudioSource', 'AudioClip', 'AudioListener', 'Play', 'Stop', 'Pause', 'UnPause',
-    'PlayOneShot', 'clip', 'volume', 'pitch', 'loop', 'mute', 'spatialBlend',
-    'Camera', 'main', 'allCameras', 'fieldOfView', 'orthographicSize', 'pixelWidth',
-    'pixelHeight', 'ScreenToWorldPoint', 'WorldToScreenPoint', 'WorldToViewportPoint',
-    'ViewportToWorldPoint', 'backgroundColor', 'cullingMask',
-    'Light', 'type', 'intensity', 'range', 'shadows', 'LightmapSettings',
-    'Mesh', 'MeshFilter', 'MeshRenderer', 'SkinnedMeshRenderer', 'Material', 'Shader',
-    'Texture', 'Texture2D', 'Sprite', 'SpriteRenderer', 'Renderer', 'bounds', 'enabled',
-
-    // UI & RectTransform (UGUI)
-    'Canvas', 'CanvasGroup', 'RenderMode', 'CanvasScaler', 'GraphicRaycaster',
-    'RectTransform', 'anchoredPosition', 'sizeDelta', 'anchorMin', 'anchorMax', 'pivot',
-    'Image', 'Text', 'Button', 'Slider', 'Toggle', 'InputField', 'Dropdown', 'ScrollRect',
-    'onClick', 'onValueChanged', 'UI', 'EventSystems', 'EventSystem', 'PointerEventData',
-
-    // Attributes
-    'SerializeField', 'HideInInspector', 'Header', 'Space', 'Tooltip', 'RangeAttribute',
-    'Multiline', 'TextArea', 'System', 'Serializable', 'CreateAssetMenu', 'RequireComponent',
-    'ExecuteInEditMode', 'DisallowMultipleComponent',
-
-    // Common Spawning & Lifecycle Methods
-    'Instantiate', 'Destroy', 'DestroyImmediate', 'GetComponent', 'GetComponentInChildren',
-    'GetComponentInParent', 'GetComponents', 'GetComponentsInChildren', 'GetComponentsInParent',
-    'TryGetComponent', 'CompareTag', 'Find', 'FindWithTag', 'FindGameObjectsWithTag',
-    'FindObjectOfType', 'FindObjectsOfType', 'SetActive', 'activeSelf', 'activeInHierarchy',
-    'tag', 'layer', 'transform', 'gameObject'
-  ];
+  // NOT: Unity'ye özgü otomatik tamamlama kelimeleri artık burada gömülü değil.
+  // Kullanıcı sağ üstteki "Unity" butonuna tıklayınca REMOTE_WORD_SOURCES içindeki
+  // repo adresinden (raw.githubusercontent.com) çekilip REMOTE_WORDS['cs'] içine
+  // önbelleklenir. Aşağıya bak: loadRemoteWords().
   var JS_WORDS = [
     'function','const','let','var','return','if','else','for','while','do','switch','case','break',
     'continue','try','catch','finally','throw','new','class','extends','super','this','null',
@@ -810,7 +750,76 @@ li.CodeMirror-hint-active{
     'height','font-size','font-family','transition','transform','opacity','z-index','justify-content',
     'align-items','absolute','relative','fixed','none','block','inline','solid','rgba'
   ];
-  var CS_WORDS = CSHARP_WORDS.concat(UNITY_WORDS);
+  /* ---------- repodan çekilen otomatik tamamlama sözlükleri ----------
+     Uzantı -> ham (raw) metin adresi. Bu listede bir uzantı için adres
+     bulunmuyorsa sağ üstteki otomatik tamamlama rozeti/butonu hiç gösterilmez. */
+  var REMOTE_WORD_SOURCES = {
+    cs: 'https://raw.githubusercontent.com/vonlabstudio-boop/SphinxCodes/refs/heads/main/Unity_Words'
+  };
+  // Uzantı -> çekilen kelime dizisi (henüz çekilmediyse yok).
+  var REMOTE_WORDS = {};
+  // Uzantı -> 'idle' | 'loading' | 'loaded' | 'error'
+  var REMOTE_WORD_STATUS = {};
+
+  /* Repo metin biçimi:
+       - Normal satırlar: genel kelimeler (her yerde önerilir; Transform, GameObject, Start, Update...).
+       - "#receiverAdı" ile başlayan satır bir bölüm açar: altındaki satırlar SADECE
+         kullanıcı "receiverAdı." yazdığında (örn. "transform.") önerilir, başka hiçbir
+         yerde karışmaz. Örnek:
+           #transform
+           position
+           rotation
+           localPosition
+       Böylece "transform." yazınca sadece Transform'a ait üyeler çıkar; void, class,
+       Update gibi alakasız kelimeler karışmaz. */
+  function parseRemoteWordList(text){
+    var global = [];
+    var members = {};
+    var currentKey = null;
+    var seenGlobal = {};
+    var seenMember = {};
+    (text || '').split(/\r?\n/).forEach(function(raw){
+      var line = raw.trim();
+      if (!line) return;
+      if (line.charAt(0) === '#'){
+        var key = line.slice(1).trim().toLowerCase();
+        currentKey = key || null;
+        if (currentKey && !members[currentKey]){ members[currentKey] = []; seenMember[currentKey] = {}; }
+        return;
+      }
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(line)) return;
+      if (currentKey){
+        var lm = line.toLowerCase();
+        if (seenMember[currentKey][lm]) return;
+        seenMember[currentKey][lm] = true;
+        members[currentKey].push(line);
+      } else {
+        var lg = line.toLowerCase();
+        if (seenGlobal[lg]) return;
+        seenGlobal[lg] = true;
+        global.push(line);
+      }
+    });
+    return { global: global, members: members };
+  }
+
+  function loadRemoteWords(ext){
+    var url = REMOTE_WORD_SOURCES[ext];
+    if (!url || REMOTE_WORD_STATUS[ext] === 'loading') return;
+    REMOTE_WORD_STATUS[ext] = 'loading';
+    updateHintBadge(files.find(function(f){ return f.id === activeId; }));
+    fetch(url).then(function(res){
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }).then(function(text){
+      REMOTE_WORDS[ext] = parseRemoteWordList(text);
+      REMOTE_WORD_STATUS[ext] = 'loaded';
+      updateHintBadge(files.find(function(f){ return f.id === activeId; }));
+    }).catch(function(){
+      REMOTE_WORD_STATUS[ext] = 'error';
+      updateHintBadge(files.find(function(f){ return f.id === activeId; }));
+    });
+  }
 
   /* ---------- Unity/C# için Visual Studio 2019 tarzı sözdizimi katmanı ----------
      Standart clike/csharp modu Unity'ye özgü sınıfları (MonoBehaviour, GameObject…)
@@ -913,7 +922,7 @@ li.CodeMirror-hint-active{
   // uzantı -> dile özgü kelime listesi. Bulunamayan uzantılarda sadece dosyadaki
   // kelimeler önerilir; otomatik tamamlamanın kendisi yine de her dosyada çalışır.
   var LANG_WORDS = {
-    cs: CS_WORDS, js: JS_WORDS, jsx: JS_WORDS, ts: JS_WORDS, tsx: JS_WORDS, mjs: JS_WORDS,
+    js: JS_WORDS, jsx: JS_WORDS, ts: JS_WORDS, tsx: JS_WORDS, mjs: JS_WORDS,
     py: PY_WORDS, html: HTML_WORDS, htm: HTML_WORDS, css: CSS_WORDS
   };
 
@@ -922,24 +931,48 @@ li.CodeMirror-hint-active{
 
   function smartHint(instance){
     var cur = instance.getCursor();
-    var token = instance.getTokenAt(cur);
-    if (token.type === 'comment' || token.type === 'string') return null;
-    var start = token.start;
-    var word = token.string.slice(0, cur.ch - start);
-    if (!/^[A-Za-z_]/.test(word)) return null;
+    var lineText = instance.getLine(cur.line);
+    var uptoCursor = lineText.slice(0, cur.ch);
+
+    // İmlecin hemen solundaki yarım kelime (örn. "transform.po|" -> "po")
+    var wordMatch = /[A-Za-z_][A-Za-z0-9_]*$/.exec(uptoCursor);
+    var word = wordMatch ? wordMatch[0] : '';
+    var start = cur.ch - word.length;
+    var beforeWord = uptoCursor.slice(0, start);
+
+    // "receiver." biçiminde miyiz? (örn. "transform." veya "transform.po")
+    var dotMatch = /([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*$/.exec(beforeWord);
+    if (!dotMatch && !word) return null;
+
+    var tokenAtCursor = instance.getTokenAt(cur);
+    if (tokenAtCursor.type === 'comment' || tokenAtCursor.type === 'string') return null;
 
     var file = files.find(function(f){ return f.id === activeId; });
-    var langWords = (file && LANG_WORDS[file.ext]) || [];
+    var ext = file && file.ext;
+    var remote = ext && REMOTE_WORDS[ext];
 
-    var bufferWords = [];
-    var seen = {};
-    var re = /[A-Za-z_][A-Za-z0-9_]*/g, m, text = instance.getValue();
-    while ((m = re.exec(text))){ if (!seen[m[0]]){ seen[m[0]] = true; bufferWords.push(m[0]); } }
+    var candidateWords;
+    if (dotMatch){
+      var receiver = dotMatch[1].toLowerCase();
+      var memberList = remote && remote.members && remote.members[receiver];
+      if (!memberList || !memberList.length) return null; // bilinmeyen receiver: alakasız kelimeler karışmasın
+      candidateWords = memberList;
+    } else {
+      var langWords = (LANG_WORDS[ext] || []).slice();
+      if (remote && remote.global) langWords = langWords.concat(remote.global);
+
+      var bufferWords = [];
+      var seenBuf = {};
+      var re = /[A-Za-z_][A-Za-z0-9_]*/g, m, text = instance.getValue();
+      while ((m = re.exec(text))){ if (!seenBuf[m[0]]){ seenBuf[m[0]] = true; bufferWords.push(m[0]); } }
+
+      candidateWords = langWords.concat(bufferWords);
+    }
 
     var lowerWord = word.toLowerCase();
     var listSeen = {};
     var list = [];
-    langWords.concat(bufferWords).forEach(function(w){
+    candidateWords.forEach(function(w){
       var lw = w.toLowerCase();
       if (listSeen[lw] || lw === lowerWord) return;
       if (lw.indexOf(lowerWord) !== 0) return;
@@ -977,6 +1010,7 @@ li.CodeMirror-hint-active{
     modalCancel: document.getElementById('modal-cancel'),
     acBadge: document.getElementById('ac-badge'),
     acBadgeLabel: document.getElementById('ac-badge-label'),
+    acBadgeStatus: document.getElementById('ac-badge-status'),
     btnTemplate: document.getElementById('btn-template'),
   };
 
@@ -1066,7 +1100,7 @@ li.CodeMirror-hint-active{
     var file = files.find(function(f){ return f.id === activeId; });
     if (!file) return;
     if (!change.text || change.text.length !== 1) return;
-    if (!/^[A-Za-z_]$/.test(change.text[0])) return;
+    if (!/^[A-Za-z_.]$/.test(change.text[0])) return;
     instance.showHint({ hint: smartHint, completeSingle: false });
   });
 
@@ -1415,15 +1449,36 @@ li.CodeMirror-hint-active{
     updateHintBadge(file);
   }
 
+  var AC_STATUS_TEXT = {
+    idle: 'Etkinleştir', loading: 'Yükleniyor…', loaded: 'Etkin', error: 'Hata · tekrar dene'
+  };
+
   function updateHintBadge(file){
-    var label = file ? HINT_BADGE[file.ext] : null;
-    if (label){
-      el.acBadgeLabel.textContent = label;
-      el.acBadge.classList.remove('hidden');
-    } else {
+    var ext = file ? file.ext : null;
+    var hasSource = ext && REMOTE_WORD_SOURCES[ext];
+    if (!hasSource){
       el.acBadge.classList.add('hidden');
+      return;
     }
+    var status = REMOTE_WORD_STATUS[ext] || 'idle';
+    el.acBadge.classList.remove('hidden');
+    el.acBadge.classList.toggle('loaded', status === 'loaded');
+    el.acBadge.classList.toggle('loading', status === 'loading');
+    el.acBadge.classList.toggle('error', status === 'error');
+    el.acBadgeLabel.textContent = HINT_BADGE[ext] || ext;
+    el.acBadgeStatus.textContent = AC_STATUS_TEXT[status];
+    el.acBadge.title = status === 'loaded'
+      ? 'Otomatik tamamlama kelimeleri repodan yüklendi (yenilemek için tıkla)'
+      : 'Otomatik tamamlama kelimelerini repodan çek';
   }
+
+  el.acBadge.addEventListener('click', function(){
+    var file = files.find(function(f){ return f.id === activeId; });
+    var ext = file && file.ext;
+    if (!ext || !REMOTE_WORD_SOURCES[ext]) return;
+    if (REMOTE_WORD_STATUS[ext] === 'loading') return;
+    loadRemoteWords(ext);
+  });
 
   function flashSaved(){
     el.flash.classList.add('show');
