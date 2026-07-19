@@ -424,6 +424,7 @@ li.CodeMirror-hint-active{
 .modal button.danger:hover{ background: rgba(194,107,95,.28); }
 .modal button.primary{ background: var(--accent-soft); border-color: rgba(217,154,78,.35); color: var(--accent); }
 .modal button.primary:hover{ background: rgba(217,154,78,.28); }
+.modal button[disabled]{ opacity:.4; cursor:not-allowed; pointer-events:none; }
 .name-field{
   width:100%;
   background: var(--panel-2);
@@ -444,11 +445,68 @@ li.CodeMirror-hint-active{
   margin-bottom: 12px;
 }
 
+.template-modal{ width:640px; max-width:92vw; max-height:80vh; display:flex; flex-direction:column; }
+.template-body{
+  display:flex; gap:14px;
+  height:360px; margin-bottom:14px;
+}
+.template-list{
+  flex:0 0 190px;
+  overflow-y:auto;
+  display:flex; flex-direction:column; gap:6px;
+  padding-right:4px;
+  border-right:1px solid var(--border-soft);
+}
+.template-item{
+  display:flex; align-items:center; gap:7px;
+  padding:9px 10px; border-radius: var(--radius-sm);
+  border:1px solid var(--border); background: var(--panel-2);
+  cursor:pointer; font-size:12.5px; color:var(--text);
+  transition: background .12s var(--ease), border-color .12s var(--ease);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.template-item:hover{ background: var(--border); }
+.template-item.featured{ border-color: rgba(217,154,78,.45); }
+.template-item.active{
+  border-color: var(--accent-dim);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.template-item .star{ color:#d99a4e; flex:0 0 auto; font-size:11px; }
+.template-preview{
+  flex:1 1 auto; min-width:0;
+  background: var(--editor-bg);
+  border:1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  overflow:auto;
+  position:relative;
+}
+.template-preview-empty{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:20px;
+  font-size:12.5px; color: var(--text-faint);
+}
+.template-preview-code{
+  margin:0; padding:12px 14px;
+  font-family: var(--font-mono); font-size:12.5px; line-height:1.6;
+  color: var(--text); white-space:pre; tab-size:4;
+}
+.template-loading, .template-error{ font-size:13px; color: var(--text-dim); padding:6px 2px; }
+.template-error{ color: var(--danger); }
+
+/* dosya açık değilken sadece "yeni dosya" ve "dosya aç" görünsün */
+.file-tool.ft-hidden{ display:none !important; }
+
 @media (max-width: 640px){
   header{ gap:10px; padding:0 10px; }
   .wordmark span.label{ display:none; }
   .zoom-group{ display:none; }
   .tab{ min-width: 96px; }
+  .template-modal{ width: 88vw; }
+  .template-body{ flex-direction:column; height:auto; max-height:60vh; }
+  .template-list{ flex:0 0 auto; max-height:150px; border-right:none; border-bottom:1px solid var(--border-soft); padding-right:0; padding-bottom:8px; }
+  .template-preview{ min-height:160px; }
 }
 </style>
 </head>
@@ -466,26 +524,29 @@ li.CodeMirror-hint-active{
       <button class="icon-btn" id="btn-open" title="Dosya aç (Ctrl+O)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
       </button>
-      <button class="icon-btn" id="btn-save" title="Kaydet (Ctrl+S)">
+
+      <div class="divider file-tool" id="divider-a"></div>
+
+      <button class="icon-btn file-tool" id="btn-save" title="Kaydet (Ctrl+S)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>
       </button>
-      <button class="icon-btn" id="btn-download" title="İndir">
+      <button class="icon-btn file-tool" id="btn-download" title="İndir">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>
       </button>
 
-      <div class="divider"></div>
+      <div class="divider file-tool" id="divider-b"></div>
 
-      <button class="icon-btn" id="btn-find" title="Bul / Değiştir (Ctrl+F)">
+      <button class="icon-btn file-tool" id="btn-find" title="Bul / Değiştir (Ctrl+F)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       </button>
-      <button class="icon-btn" id="btn-wrap" title="Satır kaydırma">
+      <button class="icon-btn file-tool" id="btn-wrap" title="Satır kaydırma">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h12a3 3 0 010 6h-2m0 0l2-2m-2 2l2 2M4 18h4"/></svg>
       </button>
-      <button class="icon-btn" id="btn-unity" title="Unity şablonu ekle (boş .cs dosyasında)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 3v9M12 12l8-4.5M12 12l-8-4.5M12 12v9"/></svg>
+      <button class="icon-btn file-tool" id="btn-template" title="Şablon ekle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
       </button>
 
-      <div class="zoom-group">
+      <div class="zoom-group file-tool">
         <button class="icon-btn" id="btn-zoom-out" title="Yazıyı küçült">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/></svg>
         </button>
@@ -556,6 +617,26 @@ li.CodeMirror-hint-active{
     <div class="row">
       <button id="name-cancel">Vazgeç</button>
       <button class="primary" id="name-confirm">Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="template-overlay">
+  <div class="modal template-modal">
+    <h2>Şablon seç</h2>
+    <p>Bir şablona tıkla, sağda önizlemesini gör. Uygulamak için alttaki butona bas.</p>
+    <div class="template-body">
+      <div class="template-list" id="template-list">
+        <div class="template-loading">Şablonlar yükleniyor…</div>
+      </div>
+      <div class="template-preview" id="template-preview">
+        <div class="template-preview-empty" id="template-preview-empty">Önizlemek için bir şablon seç</div>
+        <pre class="template-preview-code" id="template-preview-code" style="display:none"></pre>
+      </div>
+    </div>
+    <div class="row">
+      <button id="template-cancel">Vazgeç</button>
+      <button class="primary" id="template-apply" disabled>Şablonu uygula</button>
     </div>
   </div>
 </div>
@@ -896,8 +977,18 @@ li.CodeMirror-hint-active{
     modalCancel: document.getElementById('modal-cancel'),
     acBadge: document.getElementById('ac-badge'),
     acBadgeLabel: document.getElementById('ac-badge-label'),
-    btnUnity: document.getElementById('btn-unity'),
+    btnTemplate: document.getElementById('btn-template'),
   };
+
+  var templateEl = {
+    overlay: document.getElementById('template-overlay'),
+    list: document.getElementById('template-list'),
+    cancel: document.getElementById('template-cancel'),
+    apply: document.getElementById('template-apply'),
+    previewEmpty: document.getElementById('template-preview-empty'),
+    previewCode: document.getElementById('template-preview-code'),
+  };
+  var selectedTemplate = null;
 
   var cm = CodeMirror(el.editor, {
     value: '',
@@ -1075,6 +1166,47 @@ li.CodeMirror-hint-active{
     if (e.key === 'Escape'){ e.preventDefault(); nameEl.overlay.classList.remove('show'); }
   });
 
+  /* ---------- şablonlar (GitHub reposundaki tek dosyadan) ----------
+     Sablonlar dosyası şu formatta olmalı:
+
+     #UNITY-Unity Standard Script(cs)
+     {
+     using UnityEngine;
+     public class [Name] : MonoBehaviour
+     {
+         void Start()
+         {
+
+         }
+     }
+     }
+
+     "#" sonrası ilk kelime TAG (sadece uzantı eşleşmesi için dahili kullanılır,
+     ekranda gösterilmez). "-" sonrası İSİM(UZANTI) — parantez içindeki kısım
+     dosya uzantısını repodan belirler (örn "(cs)"), İSİM ise şablon seçilirken
+     görünecek etikettir. { ile } arasındaki her şey (kod kendi süslü parantezleri
+     dahil) şablonun içeriğidir; kapanış otomatik olarak parantez dengesine göre
+     bulunur. İçerikte geçen [Name], şablon uygulanırken dosya adından türetilen
+     sınıf adıyla değiştirilir. */
+  var SABLONLAR_URL = 'https://raw.githubusercontent.com/vonlabstudio-boop/SphinxCodes/refs/heads/main/Sablonlar';
+
+  // Geriye dönük uyumluluk: İSİM(UZANTI) formatı kullanılmazsa (parantez yoksa)
+  // uzantı TAG'dan tahmin edilir.
+  var TAG_EXT_MAP = {
+    'UNITY':'cs', 'C#':'cs', 'CS':'cs', 'CSHARP':'cs',
+    'JS':'js', 'JAVASCRIPT':'js', 'TS':'ts', 'TYPESCRIPT':'ts',
+    'PYTHON':'py', 'PY':'py',
+    'HTML':'html', 'CSS':'css',
+    'JAVA':'java', 'PHP':'php',
+    'CPP':'cpp', 'C++':'cpp', 'C':'c',
+    'SQL':'sql', 'SHELL':'sh', 'BASH':'sh',
+    'JSON':'json', 'MARKDOWN':'md', 'MD':'md',
+    'YAML':'yaml', 'XML':'xml'
+  };
+
+  var templatesCache = null;
+
+  // Dosya adından ([Name] yerine geçecek) geçerli bir sınıf/tip adı türetir.
   function classNameFromFile(name){
     var base = name.replace(/\.[^.]+$/, '');
     base = base.replace(/[^A-Za-z0-9_]/g, '');
@@ -1082,35 +1214,157 @@ li.CodeMirror-hint-active{
     return base || 'NewBehaviour';
   }
 
-  function insertUnityTemplate(){
-    var file = files.find(function(f){ return f.id === activeId; });
-    if (!file || file.ext !== 'cs' || cm.getValue().trim() !== '') return;
-    var className = classNameFromFile(file.name);
-    var template =
-      'using UnityEngine;\n\n' +
-      'public class ' + className + ' : MonoBehaviour\n' +
-      '{\n' +
-      '    void Start()\n' +
-      '    {\n' +
-      '        \n' +
-      '    }\n\n' +
-      '    void Update()\n' +
-      '    {\n' +
-      '        \n' +
-      '    }\n' +
-      '}\n';
-    cm.setValue(template);
-    cm.setCursor({ line: 5, ch: 8 });
-    cm.focus();
-    updateStatus();
+  function parseTemplatesText(text){
+    var items = [];
+    var headerRe = /^#([^\r\n\-]+)-(.+)$/gm;
+    var match;
+    while ((match = headerRe.exec(text))){
+      var tag = match[1].trim();
+      var rawName = match[2].trim();
+
+      // İSİM(UZANTI) formatını çöz: uzantı artık repodan (parantez içinden) geliyor.
+      // Örnek: "Unity Standard Script(cs)" -> isim="Unity Standard Script", uzantı="cs"
+      var name = rawName, ext = null;
+      var extMatch = rawName.match(/^(.*)\(([A-Za-z0-9+#]+)\)\s*$/);
+      if (extMatch){
+        name = extMatch[1].trim();
+        ext = extMatch[2].trim().toLowerCase();
+      } else {
+        // parantez yoksa geriye dönük uyumluluk için TAG'dan tahmin et
+        ext = TAG_EXT_MAP[tag.toUpperCase()] || tag.toLowerCase();
+      }
+
+      var openIdx = text.indexOf('{', headerRe.lastIndex);
+      if (openIdx === -1) continue;
+
+      var depth = 0, closeIdx = -1;
+      for (var i = openIdx; i < text.length; i++){
+        var ch = text[i];
+        if (ch === '{') depth++;
+        else if (ch === '}'){
+          depth--;
+          if (depth === 0){ closeIdx = i; break; }
+        }
+      }
+      if (closeIdx === -1) continue;
+
+      var body = text.slice(openIdx + 1, closeIdx);
+      body = body.replace(/^\r?\n/, '').replace(/\r?\n[ \t]*$/, '');
+      items.push({ tag: tag, label: name, ext: ext, content: body });
+
+      headerRe.lastIndex = closeIdx + 1;
+    }
+    return items;
   }
-  el.btnUnity.addEventListener('click', insertUnityTemplate);
+
+  function fetchTemplatesIndex(){
+    if (templatesCache) return Promise.resolve(templatesCache);
+    var bust = (SABLONLAR_URL.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
+    return fetch(SABLONLAR_URL + bust, { cache: 'no-store' })
+      .then(function(res){
+        if (!res.ok) throw new Error('Şablonlar alınamadı (' + res.status + ').');
+        return res.text();
+      })
+      .then(function(text){
+        var list = parseTemplatesText(text);
+        templatesCache = list;
+        return list;
+      });
+  }
+
+  function openTemplatePicker(){
+    var file = files.find(function(f){ return f.id === activeId; });
+    if (!file) return;
+    selectedTemplate = null;
+    templateEl.apply.disabled = true;
+    templateEl.previewEmpty.style.display = 'flex';
+    templateEl.previewCode.style.display = 'none';
+    templateEl.previewCode.textContent = '';
+    templateEl.overlay.classList.add('show');
+    templateEl.list.innerHTML = '<div class="template-loading">Şablonlar yükleniyor…</div>';
+    fetchTemplatesIndex().then(function(list){
+      renderTemplateList(list, file.ext);
+    }).catch(function(err){
+      templateEl.list.innerHTML = '<div class="template-error">' + err.message + '</div>';
+    });
+  }
+
+  // TAG sadece uzantı eşleşmesini bulmak için kullanılır; ekranda görünmez,
+  // sadece şablonun İSMİ (tag'dan sonraki kısım) gösterilir.
+  function renderTemplateList(list, currentExt){
+    if (!list || !list.length){
+      templateEl.list.innerHTML = '<div class="template-error">Repoda henüz şablon yok.</div>';
+      return;
+    }
+    // uzantısı mevcut dosyayla eşleşenler en üstte, yıldızlı; tag/grup başlığı yok, düz liste
+    var featured = list.filter(function(t){ return t.ext === currentExt; });
+    var rest = list.filter(function(t){ return t.ext !== currentExt; });
+    var ordered = featured.concat(rest);
+
+    var html = '';
+    ordered.forEach(function(t){
+      var idx = list.indexOf(t);
+      var isFeatured = t.ext === currentExt;
+      html += '<div class="template-item' + (isFeatured ? ' featured' : '') + '" data-idx="' + idx + '">' +
+        (isFeatured ? '<span class="star">★</span>' : '') +
+        '<span>' + t.label + '</span>' +
+        '</div>';
+    });
+    templateEl.list.innerHTML = html;
+
+    Array.prototype.slice.call(templateEl.list.querySelectorAll('.template-item')).forEach(function(item){
+      item.addEventListener('click', function(){
+        var idx = parseInt(item.getAttribute('data-idx'), 10);
+        selectTemplate(templatesCache[idx], item);
+      });
+    });
+  }
+
+  function selectTemplate(template, itemEl){
+    selectedTemplate = template;
+    Array.prototype.slice.call(templateEl.list.querySelectorAll('.template-item')).forEach(function(node){
+      node.classList.toggle('active', node === itemEl);
+    });
+    var file = files.find(function(f){ return f.id === activeId; });
+    var className = file ? classNameFromFile(file.name) : '[Name]';
+    var preview = template.content.split('[Name]').join(className);
+    templateEl.previewEmpty.style.display = 'none';
+    templateEl.previewCode.style.display = 'block';
+    templateEl.previewCode.textContent = preview;
+    templateEl.apply.disabled = false;
+  }
+
+  function applySelectedTemplate(){
+    if (!selectedTemplate) return;
+    var file = files.find(function(f){ return f.id === activeId; });
+    if (!file) return;
+    if (cm.getValue().trim() !== ''){
+      var ok = window.confirm('Mevcut içerik silinip şablonla değiştirilecek. Devam edilsin mi?');
+      if (!ok) return;
+    }
+    var className = classNameFromFile(file.name);
+    var content = selectedTemplate.content.split('[Name]').join(className);
+    cm.setValue(content);
+    templateEl.overlay.classList.remove('show');
+    updateStatus();
+    cm.focus();
+  }
+
+  el.btnTemplate.addEventListener('click', openTemplatePicker);
+  templateEl.apply.addEventListener('click', applySelectedTemplate);
+  templateEl.cancel.addEventListener('click', function(){ templateEl.overlay.classList.remove('show'); });
+  templateEl.overlay.addEventListener('click', function(e){
+    if (e.target === templateEl.overlay) templateEl.overlay.classList.remove('show');
+  });
 
   function refreshVisibility(){
     var has = files.length > 0;
     el.empty.classList.toggle('hidden', has);
     el.editor.style.display = has ? 'block' : 'none';
     el.tabbar.classList.toggle('empty', !has);
+    Array.prototype.slice.call(document.querySelectorAll('.file-tool')).forEach(function(node){
+      node.classList.toggle('ft-hidden', !has);
+    });
   }
 
   /* ---------- sekme çubuğu ---------- */
@@ -1149,7 +1403,6 @@ li.CodeMirror-hint-active{
       el.posLabel.textContent = '—'; el.lenLabel.textContent = '—';
       el.saveDot.classList.remove('dirty');
       updateHintBadge(null);
-      updateUnityButton(null);
       return;
     }
     var cur = cm.getCursor();
@@ -1160,7 +1413,6 @@ li.CodeMirror-hint-active{
     el.saveLabel.textContent = file.dirty ? 'Kaydedilmedi' : 'Kaydedildi';
     el.saveDot.classList.toggle('dirty', file.dirty);
     updateHintBadge(file);
-    updateUnityButton(file);
   }
 
   function updateHintBadge(file){
@@ -1171,11 +1423,6 @@ li.CodeMirror-hint-active{
     } else {
       el.acBadge.classList.add('hidden');
     }
-  }
-
-  function updateUnityButton(file){
-    var isEmptyCs = !!file && file.ext === 'cs' && cm.getValue().trim() === '';
-    el.btnUnity.disabled = !isEmptyCs;
   }
 
   function flashSaved(){
@@ -1346,9 +1593,9 @@ li.CodeMirror-hint-active{
   });
 
   /* ---------- başlangıç ---------- */
-  var welcome = createFile('main.js', '');
   renderTabs();
-  openFile(welcome);
+  refreshVisibility();
+  updateStatus();
   applyFontSize();
 })();
 </script>
