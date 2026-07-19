@@ -1,19 +1,20 @@
-#UNITY
+#UNITY-Unity
+{
 using UnityEngine;
-
 public class NewBehaviour : MonoBehaviour
 {
     void Start()
     {
         
     }
-
     void Update()
     {
         
     }
 }
-#C#
+}
+#C#-C# main
+{
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,4 +31,5 @@ namespace MyProject
             
         }
     }
+}
 }
