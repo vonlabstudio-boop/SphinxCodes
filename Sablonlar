@@ -1,35 +1,124 @@
-#UNITY-Unity
+#UNITY-Unity Standard Script(cs)
 {
 using UnityEngine;
+
 public class [Name] : MonoBehaviour
 {
     void Start()
     {
         
     }
+
     void Update()
     {
         
     }
 }
 }
-#C#-C# main
+
+#C#-C# Main Class(cs)
 {
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace [Name]
 {
-    public class NewClass
+    public class Program
     {
-        // Constructor (Yapıcı Metot)
-        public NewClass()
+        public static void Main(string[] args)
         {
-            
+            Console.WriteLine("Hello World!");
         }
     }
 }
+}
+
+#PYTHON-Python Main Script(py)
+{
+def main():
+    print("Hello from [Name]!")
+
+if __name__ == "__main__":
+    main()
+}
+
+#CPP-C++ Console Application(cpp)
+{
+#include <iostream>
+
+int main() {
+    std::cout << "Hello from [Name]!" << std::endl;
+    return 0;
+}
+}
+
+#HTML-HTML5 Boilerplate(html)
+{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[Name]</title>
+</head>
+<body>
+    
+    <h1>Welcome to [Name]</h1>
+
+</body>
+</html>
+}
+
+#JAVASCRIPT-JS DOM Ready(js)
+{
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("[Name] initialized.");
+});
+}
+
+#CSS-CSS Reset(css)
+{
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: sans-serif;
+    line-height: 1.5;
+}
+}
+
+#JAVA-Java Main Class(java)
+{
+public class [Name] {
+    public static void main(String[] args) {
+        System.out.println("Hello World!");
+    }
+}
+}
+
+#GO-Go Main Package(go)
+{
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello from [Name]!")
+}
+}
+
+#PHP-PHP Script(php)
+{
+<?php
+
+class [Name] {
+    public function __construct() {
+        echo "Hello World!";
+    }
+}
+
+?>
 }
