@@ -1,7 +1,7 @@
 #UNITY-Unity
 {
 using UnityEngine;
-public class NewBehaviour : MonoBehaviour
+public class [Name] : MonoBehaviour
 {
     void Start()
     {
@@ -21,7 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyProject
+namespace [Name]
 {
     public class NewClass
     {
